@@ -135,7 +135,7 @@
 
             <!-- Add to Cart Footer -->
             <div class="p-4 border-t border-slate-200 bg-white shrink-0 flex items-center gap-4">
-                <div class="flex items-center border border-slate-200 rounded-[4px] bg-slate-50 h-12">
+                <div class="flex items-center border border-slate-200 rounded-[15px] bg-slate-50 h-12">
                     <button id="btn-modal-minus" class="w-12 h-full flex items-center justify-center hover:bg-slate-200 text-slate-600 rounded-l-[4px] active:bg-slate-300">
                         <i data-lucide="minus" class="w-4 h-4"></i>
                     </button>
@@ -144,7 +144,7 @@
                         <i data-lucide="plus" class="w-4 h-4"></i>
                     </button>
                 </div>
-                <button id="btn-modal-add" class="flex-1 bg-brand-600 text-white h-12 rounded-[4px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-2">
+                <button id="btn-modal-add" class="flex-1 bg-brand-600 text-white h-12 rounded-[15px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-2">
                     Agregar <span id="modal-add-total">$0.00</span>
                 </button>
             </div>
@@ -240,7 +240,7 @@
         let cart = [];
         let deliveryMethod = 'pickup'; // 'pickup' | 'delivery'
         const DELIVERY_FEE = 35;
-        const WA_PHONE = "521234567890";
+        const WA_PHONE = "524434031442";
         
         let currentModalItem = null;
         let currentModalQty = 1;
@@ -294,7 +294,7 @@
             
             items.forEach(item => {
                 html += `
-                <div class="bg-white rounded-[4px] shadow-sm border border-slate-200 overflow-hidden flex flex-col active:scale-[0.96] transition-transform cursor-pointer" onclick="openItemModal(${item.id})">
+                <div class="bg-white rounded-[20px] shadow-sm border border-slate-200 overflow-hidden flex flex-col active:scale-[0.96] transition-transform cursor-pointer" onclick="openItemModal(${item.id})">
                     <div class="w-full aspect-square bg-slate-200 relative">
                         <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" />
                     </div>
@@ -675,7 +675,7 @@
             cart.forEach(item => {
                 const rowTotal = item.finalPrice * item.quantity;
                 subtotal += rowTotal;
-                message += `▪️ ${item.quantity}x ${item.name} ($${item.finalPrice}) = $${rowTotal}\n`;
+                message += `${item.quantity}x ${item.name} ($${item.finalPrice}) = $${rowTotal}\n`;
                 if(item.milk) message += `   - Leche: ${item.milk}\n`;
                 if(item.notes) message += `   - Notas: ${item.notes}\n`;
             });
@@ -683,12 +683,12 @@
             const fee = deliveryMethod === 'delivery' ? DELIVERY_FEE : 0;
             const total = subtotal + fee;
 
-            message += `\n📦 Método: ${deliveryMethod === 'pickup' ? 'Recoger en tienda' : 'Servicio a domicilio'}`;
+            message += `\nMétodo: ${deliveryMethod === 'pickup' ? 'Recoger en tienda' : 'Servicio a domicilio'}`;
             if (deliveryMethod === 'delivery') {
-                message += `\n🛵 Costo de envío: $${fee}`;
+                message += `\nCosto de envío: $${fee}`;
             }
             
-            message += `\n\n💳 *Total a pagar: $${total}*`;
+            message += `\n\n*Total a pagar: $${total}*`;
             message += `\n\n¡Gracias!`;
 
             const encodedMessage = encodeURIComponent(message);
