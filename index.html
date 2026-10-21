@@ -1,10 +1,11 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Habitante Café</title>
-   <script src="https://cdn.tailwindcss.com"></script>
+    <title>Habitante Café - App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
@@ -18,8 +19,8 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        brand: { 500: '#1e293b', 600: '#6255c1' }, // Slate 800/900
-                        accent: { 500: '#6255c1', 600: '#6255c1' } // WhatsApp Green
+                        brand: { 500: '#1e293b', 600: '#0f172a' }, // Slate 800/900
+                        accent: { 500: '#25D366', 600: '#20bd5a' } // WhatsApp Green
                     }
                 }
             }
@@ -40,15 +41,16 @@
         .touch-action-none { touch-action: none; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen overflow-hidden selection:bg-slate-200 flex justify-center">
+<body class="bg-slate-100 text-slate-800 font-sans h-[100dvh] w-screen overflow-hidden selection:bg-slate-200 flex justify-center">
 
     <!-- App Container (Mobile viewport simulator on desktop, full width on mobile) -->
-    <div class="w-full max-w-md h-full bg-white relative shadow-2xl overflow-hidden flex flex-col">
+    <div class="w-full max-w-md h-[100dvh] bg-white relative shadow-2xl overflow-hidden flex flex-col">
         
         <!-- Header -->
         <header class="bg-white border-b border-slate-200 z-20 shrink-0 shadow-sm relative">
             <div class="px-4 h-16 flex items-center gap-3">
-                <img src="habitante.svg" alt="Logo" class="h-8 w-auto rounded-[4px] object-contain" />
+                <img src="habitante.svg" alt="Logo" onerror="this.src='https://placehold.co/120x40/f8fafc/0f172a?text=Habitante'" class="h-8 w-auto rounded-[4px] object-contain" />
+                <h1 class="text-lg font-bold tracking-tight text-slate-900">Habitante Café</h1>
             </div>
             
             <!-- Category Tabs -->
@@ -59,11 +61,13 @@
         </header>
 
         <!-- Main Content (Infinite Carousel) -->
-        <main id="carousel-viewport" class="flex-1 relative overflow-hidden touch-action-none bg-slate-50">
-            <!-- Panels -->
-            <div id="panel-0" class="absolute top-0 left-0 w-full h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
-            <div id="panel-1" class="absolute top-0 left-0 w-full h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
-            <div id="panel-2" class="absolute top-0 left-0 w-full h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+        <main id="carousel-viewport" class="flex-1 relative overflow-hidden bg-slate-50">
+            <!-- Panels Wrapper -->
+            <div id="carousel-track" class="flex w-[300%] h-full transform -translate-x-1/3 will-change-transform">
+                <div id="panel-left" class="w-1/3 h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+                <div id="panel-center" class="w-1/3 h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+                <div id="panel-right" class="w-1/3 h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+            </div>
         </main>
 
         <!-- Floating Action Button (Cart) -->
@@ -84,7 +88,7 @@
         <div id="modal-overlay" class="absolute inset-0 bg-black/60 z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
 
         <!-- Item Bottom Sheet -->
-        <div id="item-modal" class="absolute bottom-0 left-0 right-0 h-[90%] bg-white z-40 transform translate-y-full rounded-t-[4px] flex flex-col shadow-2xl">
+        <div id="item-modal" class="absolute bottom-0 left-0 right-0 h-[85dvh] max-h-[100dvh] bg-white z-40 transform translate-y-full rounded-t-[4px] flex flex-col shadow-2xl">
             <div class="w-full h-12 flex justify-center items-center shrink-0 border-b border-slate-100">
                 <div class="w-12 h-1.5 bg-slate-300 rounded-[4px]"></div>
             </div>
@@ -132,7 +136,7 @@
 
             <!-- Add to Cart Footer -->
             <div class="p-4 border-t border-slate-200 bg-white shrink-0 flex items-center gap-4">
-                <div class="flex items-center border border-slate-200 rounded-[10px] bg-slate-50 h-12">
+                <div class="flex items-center border border-slate-200 rounded-[4px] bg-slate-50 h-12">
                     <button id="btn-modal-minus" class="w-12 h-full flex items-center justify-center hover:bg-slate-200 text-slate-600 rounded-l-[4px] active:bg-slate-300">
                         <i data-lucide="minus" class="w-4 h-4"></i>
                     </button>
@@ -141,14 +145,14 @@
                         <i data-lucide="plus" class="w-4 h-4"></i>
                     </button>
                 </div>
-                <button id="btn-modal-add" class="flex-1 bg-brand-600 text-white h-12 rounded-[10px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-2">
+                <button id="btn-modal-add" class="flex-1 bg-brand-600 text-white h-12 rounded-[4px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-2">
                     Agregar <span id="modal-add-total">$0.00</span>
                 </button>
             </div>
         </div>
 
         <!-- Checkout Bottom Sheet -->
-        <div id="checkout-modal" class="absolute inset-0 bg-white z-50 transform translate-y-full flex flex-col">
+        <div id="checkout-modal" class="absolute inset-0 h-[100dvh] bg-white z-50 transform translate-y-full flex flex-col">
             <!-- Checkout Header -->
             <div class="h-16 px-4 flex items-center justify-between border-b border-slate-200 shrink-0 bg-white shadow-sm z-10">
                 <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -204,7 +208,7 @@
 
             <!-- Send Button -->
             <div class="p-4 bg-white border-t border-slate-200 shrink-0 pb-8">
-                <button id="btn-send-order" class="w-full bg-accent-500 text-white py-4 rounded-[4px] font-bold text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg">
+                <button id="btn-send-order" class="w-full bg-accent-500 text-white py-4 rounded-[4px] font-bold text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-green-500/20">
                     <i data-lucide="send" class="w-5 h-5"></i>
                     Enviar mi orden
                 </button>
@@ -215,7 +219,7 @@
 
     <script>
         // --- DATA ---
-        const CATEGORIES = ['Alimentos', 'Bebidas', 'Panadería'];
+          const CATEGORIES = ['Alimentos', 'Bebidas', 'Panadería'];
         const MENU_ITEMS = [
             // Bebidas
             { id: 2, name: 'Flat White', category: 'Bebidas', description: 'Espresso doble con leche finamente texturizada.', price: 55, image: 'img/flatwhite.png', requiresMilk: true },
@@ -237,7 +241,7 @@
         let cart = [];
         let deliveryMethod = 'pickup'; // 'pickup' | 'delivery'
         const DELIVERY_FEE = 35;
-        const WA_PHONE = "524434031442";
+        const WA_PHONE = "521234567890";
         
         let currentModalItem = null;
         let currentModalQty = 1;
@@ -247,17 +251,12 @@
         const totalCats = CATEGORIES.length;
         let activeCatIndex = 0; 
         
-        // We use 3 DOM nodes for the infinite loop
+        const track = document.getElementById('carousel-track');
         const domPanels = [
-            document.getElementById('panel-0'),
-            document.getElementById('panel-1'),
-            document.getElementById('panel-2')
+            document.getElementById('panel-left'),
+            document.getElementById('panel-center'),
+            document.getElementById('panel-right')
         ];
-        
-        // Roles pointers: indices in domPanels array
-        let pLeft = 2;   
-        let pCenter = 0; 
-        let pRight = 1;  
 
         // Setup DOM logic
         function initApp() {
@@ -274,15 +273,10 @@
             });
             updateTabIndicator(0);
 
-            // Initial Positioning
-            gsap.set(domPanels[pLeft], { xPercent: -100 });
-            gsap.set(domPanels[pCenter], { xPercent: 0 });
-            gsap.set(domPanels[pRight], { xPercent: 100 });
-
             // Initial Render
-            renderPanelContent(domPanels[pCenter], activeCatIndex);
-            renderPanelContent(domPanels[pRight], (activeCatIndex + 1) % totalCats);
-            renderPanelContent(domPanels[pLeft], (activeCatIndex - 1 + totalCats) % totalCats);
+            renderPanelContent(domPanels[1], activeCatIndex); // Center
+            renderPanelContent(domPanels[2], (activeCatIndex + 1) % totalCats); // Right
+            renderPanelContent(domPanels[0], (activeCatIndex - 1 + totalCats) % totalCats); // Left
 
             setupSwipeLogic();
             setupModals();
@@ -301,7 +295,7 @@
             
             items.forEach(item => {
                 html += `
-                <div class="bg-white rounded-[20px] shadow-sm border border-slate-200 overflow-hidden flex flex-col active:scale-[0.96] transition-transform cursor-pointer" onclick="openItemModal(${item.id})">
+                <div class="bg-white rounded-[4px] shadow-sm border border-slate-200 overflow-hidden flex flex-col active:scale-[0.96] transition-transform cursor-pointer" onclick="openItemModal(${item.id})">
                     <div class="w-full aspect-square bg-slate-200 relative">
                         <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" />
                     </div>
@@ -338,11 +332,10 @@
         function goToCategory(targetIndex) {
             if(targetIndex === activeCatIndex || isAnimating) return;
             
-            // Determine direction
-            let dir = 1; 
-            if (targetIndex === (activeCatIndex + 1) % totalCats) dir = 1;
-            else if (targetIndex === (activeCatIndex - 1 + totalCats) % totalCats) dir = -1;
-            else dir = targetIndex > activeCatIndex ? 1 : -1;
+            let dir = targetIndex > activeCatIndex ? 1 : -1;
+            // Handle wrap-around
+            if (activeCatIndex === totalCats - 1 && targetIndex === 0) dir = 1;
+            if (activeCatIndex === 0 && targetIndex === totalCats - 1) dir = -1;
 
             if (dir === 1) swipeLeft(targetIndex);
             else swipeRight(targetIndex);
@@ -353,22 +346,18 @@
             isAnimating = true;
             
             const nextCatIndex = forceCatIndex !== null ? forceCatIndex : (activeCatIndex + 1) % totalCats;
-            
-            if(forceCatIndex !== null) renderPanelContent(domPanels[pRight], nextCatIndex);
+            if(forceCatIndex !== null) renderPanelContent(domPanels[2], nextCatIndex);
 
-            gsap.to(domPanels[pCenter], { xPercent: -100, duration: 0.4, ease: "power3.inOut" });
-            gsap.to(domPanels[pRight], { xPercent: 0, duration: 0.4, ease: "power3.inOut", onComplete: () => {
-                const oldLeft = pLeft;
-                pLeft = pCenter;
-                pCenter = pRight;
-                pRight = oldLeft;
-
+            gsap.to(track, { x: '-66.666%', duration: 0.4, ease: "power3.inOut", onComplete: () => {
                 activeCatIndex = nextCatIndex;
                 updateTabIndicator(activeCatIndex);
-
-                gsap.set(domPanels[pRight], { xPercent: 100 });
-                renderPanelContent(domPanels[pRight], (activeCatIndex + 1) % totalCats);
                 
+                // Shift panels logically
+                renderPanelContent(domPanels[1], activeCatIndex);
+                renderPanelContent(domPanels[2], (activeCatIndex + 1) % totalCats);
+                renderPanelContent(domPanels[0], (activeCatIndex - 1 + totalCats) % totalCats);
+                
+                gsap.set(track, { x: '-33.333%' });
                 isAnimating = false;
             }});
         }
@@ -378,22 +367,18 @@
             isAnimating = true;
 
             const prevCatIndex = forceCatIndex !== null ? forceCatIndex : (activeCatIndex - 1 + totalCats) % totalCats;
-            
-            if(forceCatIndex !== null) renderPanelContent(domPanels[pLeft], prevCatIndex);
+            if(forceCatIndex !== null) renderPanelContent(domPanels[0], prevCatIndex);
 
-            gsap.to(domPanels[pCenter], { xPercent: 100, duration: 0.4, ease: "power3.inOut" });
-            gsap.to(domPanels[pLeft], { xPercent: 0, duration: 0.4, ease: "power3.inOut", onComplete: () => {
-                const oldRight = pRight;
-                pRight = pCenter;
-                pCenter = pLeft;
-                pLeft = oldRight;
-
+            gsap.to(track, { x: '0%', duration: 0.4, ease: "power3.inOut", onComplete: () => {
                 activeCatIndex = prevCatIndex;
                 updateTabIndicator(activeCatIndex);
 
-                gsap.set(domPanels[pLeft], { xPercent: -100 });
-                renderPanelContent(domPanels[pLeft], (activeCatIndex - 1 + totalCats) % totalCats);
+                // Shift panels logically
+                renderPanelContent(domPanels[1], activeCatIndex);
+                renderPanelContent(domPanels[2], (activeCatIndex + 1) % totalCats);
+                renderPanelContent(domPanels[0], (activeCatIndex - 1 + totalCats) % totalCats);
                 
+                gsap.set(track, { x: '-33.333%' });
                 isAnimating = false;
             }});
         }
@@ -401,40 +386,53 @@
         // --- TOUCH DRAG LOGIC ---
         function setupSwipeLogic() {
             const vp = document.getElementById('carousel-viewport');
-            let startX = 0, currentX = 0;
+            let startX = 0, startY = 0, currentX = 0;
             let isDragging = false;
+            let isHorizontalSwipe = false;
 
             vp.addEventListener('touchstart', (e) => {
                 if(isAnimating || window.modalOpen) return;
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
                 isDragging = true;
+                isHorizontalSwipe = false;
             }, {passive: true});
 
             vp.addEventListener('touchmove', (e) => {
                 if(!isDragging || window.modalOpen) return;
-                currentX = e.touches[0].clientX;
-                let deltaX = currentX - startX;
                 
-                gsap.set(domPanels[pCenter], { x: deltaX });
-                gsap.set(domPanels[pLeft], { x: deltaX - vp.offsetWidth });
-                gsap.set(domPanels[pRight], { x: deltaX + vp.offsetWidth });
-            }, {passive: true});
+                currentX = e.touches[0].clientX;
+                let currentY = e.touches[0].clientY;
+                let deltaX = currentX - startX;
+                let deltaY = currentY - startY;
+                
+                // Determine swipe intent (prevent vertical scroll interference)
+                if (!isHorizontalSwipe && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+                    isHorizontalSwipe = true;
+                }
+
+                if (isHorizontalSwipe) {
+                    if (e.cancelable) e.preventDefault(); // Stop vertical scrolling during horizontal swipe
+                    const trackWidth = vp.offsetWidth;
+                    const baseOffset = -trackWidth; // -33.333% of 300% is -100% of the viewport width
+                    gsap.set(track, { x: baseOffset + deltaX });
+                }
+            }, {passive: false}); // passive false to allow preventDefault
 
             vp.addEventListener('touchend', (e) => {
                 if(!isDragging || window.modalOpen) return;
                 isDragging = false;
-                let deltaX = currentX - startX;
-                const threshold = vp.offsetWidth * 0.2; 
+                
+                if (!isHorizontalSwipe) return; // It was a tap or vertical scroll
 
-                gsap.set([domPanels[pCenter], domPanels[pLeft], domPanels[pRight]], { clearProps: "x" });
+                let deltaX = currentX - startX;
+                const threshold = 40; // 40px minimum to trigger change
 
                 if (deltaX < -threshold) { swipeLeft(); } 
                 else if (deltaX > threshold) { swipeRight(); } 
                 else {
                     isAnimating = true;
-                    gsap.to(domPanels[pCenter], { xPercent: 0, duration: 0.3, ease: "power2.out" });
-                    gsap.to(domPanels[pLeft], { xPercent: -100, duration: 0.3, ease: "power2.out" });
-                    gsap.to(domPanels[pRight], { xPercent: 100, duration: 0.3, ease: "power2.out", onComplete: () => isAnimating = false });
+                    gsap.to(track, { x: '-33.333%', duration: 0.3, ease: "power2.out", onComplete: () => isAnimating = false });
                 }
             });
         }
@@ -673,12 +671,12 @@
             if (cart.length === 0) return;
 
             let subtotal = 0;
-            let message = `¡Hola Habitante Café! \nMe gustaría realizar el siguiente pedido:\n\n`;
+            let message = `¡Hola Habitante Café! 👋\nMe gustaría realizar el siguiente pedido:\n\n`;
             
             cart.forEach(item => {
                 const rowTotal = item.finalPrice * item.quantity;
                 subtotal += rowTotal;
-                message += ` ${item.quantity}x ${item.name} ($${item.finalPrice}) = $${rowTotal}\n`;
+                message += `▪️ ${item.quantity}x ${item.name} ($${item.finalPrice}) = $${rowTotal}\n`;
                 if(item.milk) message += `   - Leche: ${item.milk}\n`;
                 if(item.notes) message += `   - Notas: ${item.notes}\n`;
             });
@@ -686,12 +684,12 @@
             const fee = deliveryMethod === 'delivery' ? DELIVERY_FEE : 0;
             const total = subtotal + fee;
 
-            message += `\n Método: ${deliveryMethod === 'pickup' ? 'Recoger en tienda' : 'Servicio a domicilio'}`;
+            message += `\n📦 Método: ${deliveryMethod === 'pickup' ? 'Recoger en tienda' : 'Servicio a domicilio'}`;
             if (deliveryMethod === 'delivery') {
                 message += `\n🛵 Costo de envío: $${fee}`;
             }
             
-            message += `\n\n *Total a pagar: $${total}*`;
+            message += `\n\n💳 *Total a pagar: $${total}*`;
             message += `\n\n¡Gracias!`;
 
             const encodedMessage = encodeURIComponent(message);
