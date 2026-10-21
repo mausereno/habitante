@@ -1,0 +1,705 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Habitante Café</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 500: '#1e293b', 600: '#6255c1' }, // Slate 800/900
+                        accent: { 500: '#6255c1', 600: '#6255c1' } // WhatsApp Green
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base styles to prevent pull-to-refresh and handle native app feel */
+        body {
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Hide scrollbars */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Draggable elements */
+        .touch-action-none { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen overflow-hidden selection:bg-slate-200 flex justify-center">
+
+    <!-- App Container (Mobile viewport simulator on desktop, full width on mobile) -->
+    <div class="w-full max-w-md h-full bg-white relative shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200 z-20 shrink-0 shadow-sm relative">
+            <div class="px-4 h-16 flex items-center gap-3">
+                <img src="habitante.svg" alt="Logo" class="h-8 w-auto rounded-[4px] object-contain" />
+            </div>
+            
+            <!-- Category Tabs -->
+            <div id="tabs-container" class="flex overflow-x-auto no-scrollbar px-4 pb-0 pt-2 gap-4 border-t border-slate-100 relative touch-action-none">
+                <div class="absolute bottom-0 h-[2px] bg-slate-900 transition-all duration-300 rounded-t-[4px]" id="tab-indicator"></div>
+                <!-- Tabs injected by JS -->
+            </div>
+        </header>
+
+        <!-- Main Content (Infinite Carousel) -->
+        <main id="carousel-viewport" class="flex-1 relative overflow-hidden touch-action-none bg-slate-50">
+            <!-- Panels -->
+            <div id="panel-0" class="absolute top-0 left-0 w-full h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+            <div id="panel-1" class="absolute top-0 left-0 w-full h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+            <div id="panel-2" class="absolute top-0 left-0 w-full h-full overflow-y-auto no-scrollbar pb-24 px-4 pt-4"></div>
+        </main>
+
+        <!-- Floating Action Button (Cart) -->
+        <div id="fab-container" class="absolute bottom-4 right-4 z-20 transform translate-y-[150%]">
+            <button id="btn-open-checkout" class="bg-brand-600 text-white rounded-[4px] py-3 px-4 flex items-center gap-3 shadow-[0_8px_30px_rgba(15,23,42,0.3)] active:scale-95 transition-transform">
+                <div class="flex flex-col items-start mr-2">
+                    <span class="font-semibold text-sm">Finalizar pedido</span>
+                    <span id="fab-total" class="font-bold text-base leading-tight">$0.00</span>
+                </div>
+                <div class="relative bg-white/20 p-2 rounded-[4px]">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span id="fab-badge" class="absolute -top-2 -right-2 bg-accent-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-[4px]">0</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Overlays & Modals -->
+        <div id="modal-overlay" class="absolute inset-0 bg-black/60 z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+        <!-- Item Bottom Sheet -->
+        <div id="item-modal" class="absolute bottom-0 left-0 right-0 h-[90%] bg-white z-40 transform translate-y-full rounded-t-[4px] flex flex-col shadow-2xl">
+            <div class="w-full h-12 flex justify-center items-center shrink-0 border-b border-slate-100">
+                <div class="w-12 h-1.5 bg-slate-300 rounded-[4px]"></div>
+            </div>
+            
+            <div id="item-modal-body" class="flex-1 overflow-y-auto no-scrollbar flex flex-col">
+                <div id="item-modal-img" class="w-full h-64 bg-slate-200 bg-cover bg-center rounded-[4px] mx-4 mt-2 shrink-0" style="width: calc(100% - 32px);"></div>
+                
+                <div class="p-5 flex flex-col gap-4">
+                    <div>
+                        <h2 id="item-modal-title" class="text-2xl font-bold text-slate-900 mb-2">Item Name</h2>
+                        <p id="item-modal-desc" class="text-slate-500 text-sm leading-relaxed">Description...</p>
+                        <p id="item-modal-price" class="text-xl font-bold text-slate-900 mt-3">$0.00</p>
+                    </div>
+
+                    <!-- Customization: Milk Type (Dynamic based on requiresMilk) -->
+                    <div id="item-modal-options" class="hidden flex-col gap-3 mt-4">
+                        <h3 class="font-semibold text-slate-900 text-sm bg-slate-100 p-2 rounded-[4px] uppercase tracking-wider">Tipo de Leche</h3>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-[4px] active:bg-slate-50">
+                                <span class="font-medium text-sm">Entera</span>
+                                <input type="radio" name="milk" value="Entera" class="accent-brand-600 w-4 h-4" checked>
+                            </label>
+                            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-[4px] active:bg-slate-50">
+                                <span class="font-medium text-sm">Deslactosada</span>
+                                <input type="radio" name="milk" value="Deslactosada" class="accent-brand-600 w-4 h-4">
+                            </label>
+                            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-[4px] active:bg-slate-50">
+                                <span class="font-medium text-sm">Avena (+ $10)</span>
+                                <input type="radio" name="milk" value="Avena" data-extra="10" class="accent-brand-600 w-4 h-4">
+                            </label>
+                            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-[4px] active:bg-slate-50">
+                                <span class="font-medium text-sm">Almendra (+ $10)</span>
+                                <input type="radio" name="milk" value="Almendra" data-extra="10" class="accent-brand-600 w-4 h-4">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mt-4">
+                        <h3 class="font-semibold text-slate-900 text-sm bg-slate-100 p-2 rounded-[4px] uppercase tracking-wider mb-3">Notas para la cocina</h3>
+                        <textarea id="item-modal-notes" class="w-full border border-slate-200 rounded-[4px] p-3 text-sm focus:outline-none focus:border-brand-600 resize-none no-scrollbar bg-slate-50" rows="2" placeholder="Sin azúcar, extra caliente..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add to Cart Footer -->
+            <div class="p-4 border-t border-slate-200 bg-white shrink-0 flex items-center gap-4">
+                <div class="flex items-center border border-slate-200 rounded-[10px] bg-slate-50 h-12">
+                    <button id="btn-modal-minus" class="w-12 h-full flex items-center justify-center hover:bg-slate-200 text-slate-600 rounded-l-[4px] active:bg-slate-300">
+                        <i data-lucide="minus" class="w-4 h-4"></i>
+                    </button>
+                    <span id="modal-qty" class="w-8 text-center font-bold text-slate-900">1</span>
+                    <button id="btn-modal-plus" class="w-12 h-full flex items-center justify-center hover:bg-slate-200 text-slate-600 rounded-r-[4px] active:bg-slate-300">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <button id="btn-modal-add" class="flex-1 bg-brand-600 text-white h-12 rounded-[10px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-2">
+                    Agregar <span id="modal-add-total">$0.00</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Checkout Bottom Sheet -->
+        <div id="checkout-modal" class="absolute inset-0 bg-white z-50 transform translate-y-full flex flex-col">
+            <!-- Checkout Header -->
+            <div class="h-16 px-4 flex items-center justify-between border-b border-slate-200 shrink-0 bg-white shadow-sm z-10">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="receipt" class="w-5 h-5"></i> Tu Pedido
+                </h2>
+                <button id="btn-close-checkout" class="p-2 bg-slate-100 rounded-[4px] active:bg-slate-200 text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-6 bg-slate-50">
+                
+                <!-- Delivery Method -->
+                <div class="bg-white p-4 rounded-[4px] border border-slate-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Método de Entrega</h3>
+                    <div class="flex gap-2">
+                        <button id="btn-pickup" class="flex-1 py-3 px-2 border rounded-[4px] text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-colors bg-brand-600 text-white border-brand-600">
+                            <i data-lucide="store" class="w-5 h-5"></i> Recoger
+                        </button>
+                        <button id="btn-delivery" class="flex-1 py-3 px-2 border rounded-[4px] text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-colors bg-white text-slate-500 border-slate-200 active:bg-slate-50">
+                            <i data-lucide="bike" class="w-5 h-5"></i> A Domicilio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cart Items -->
+                <div class="bg-white p-4 rounded-[4px] border border-slate-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 border-b border-slate-100 pb-2">Artículos</h3>
+                    <div id="checkout-items" class="flex flex-col gap-4">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="bg-white p-4 rounded-[4px] border border-slate-200 shadow-sm mb-6">
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 border-b border-slate-100 pb-2">Resumen</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-slate-600 text-sm">
+                            <span>Subtotal</span>
+                            <span id="checkout-subtotal" class="font-medium">$0.00</span>
+                        </div>
+                        <div id="checkout-delivery-row" class="hidden justify-between text-slate-600 text-sm">
+                            <span>Costo de envío</span>
+                            <span class="font-medium">$35.00</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold text-slate-900 pt-3 border-t border-slate-100 mt-2">
+                            <span>Total</span>
+                            <span id="checkout-total">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send Button -->
+            <div class="p-4 bg-white border-t border-slate-200 shrink-0 pb-8">
+                <button id="btn-send-order" class="w-full bg-accent-500 text-white py-4 rounded-[4px] font-bold text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    Enviar mi orden
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        const CATEGORIES = ['Alimentos', 'Bebidas', 'Panadería'];
+        const MENU_ITEMS = [
+            // Bebidas
+            { id: 2, name: 'Flat White', category: 'Bebidas', description: 'Espresso doble con leche finamente texturizada.', price: 55, image: '/img/flatwhite.png', requiresMilk: true },
+            { id: 11, name: 'Latte', category: 'Bebidas', description: 'Espresso con leche cremada y una capa ligera de espuma.', price: 60, image: '/img/latte.png', requiresMilk: true },
+            { id: 1, name: 'Espresso', category: 'Bebidas', description: 'Shot de nuestro café de la casa. Equilibrado y con gran cuerpo.', price: 45, image: '/img/espresso.png', requiresMilk: false },
+            { id: 12, name: 'Espresso Doble', category: 'Bebidas', description: 'Doble shot de nuestro café de la casa. Equilibrado y con gran cuerpo.', price: 50, image: '/img/espresso-doble.png', requiresMilk: false },
+            { id: 3, name: 'Filtrado', category: 'Bebidas', description: 'Café de especialidad filtrado.', price: 65, image: '/img/v60.png', requiresMilk: false },
+            { id: 4, name: 'Matcha', category: 'Bebidas', description: 'Bebida probiótica artesanal y refrescante.', price: 60, image: '/img/matcha.png', requiresMilk: true },
+            
+            // Alimentos
+            { id: 5, name: 'Cremoso', category: 'Alimentos', description: 'Texto', price: 120, image: '/img/cremoso.png', requiresMilk: false },
+            { id: 6, name: 'Ranch', category: 'Alimentos', description: 'Texto', price: 110, image: '/img/ranch.png', requiresMilk: false },
+            
+            // Panadería
+            { id: 8, name: 'Pan de Plátano', category: 'Panadería', description: 'Clásico francés de mantequilla, horneado diariamente.', price: 45, image: '/img/pan-platano.png', requiresMilk: false },
+           ];
+
+        // --- STATE ---
+        let cart = [];
+        let deliveryMethod = 'pickup'; // 'pickup' | 'delivery'
+        const DELIVERY_FEE = 35;
+        const WA_PHONE = "524434031442";
+        
+        let currentModalItem = null;
+        let currentModalQty = 1;
+        let currentModalExtraCost = 0;
+
+        // --- INFINITE CAROUSEL STATE ---
+        const totalCats = CATEGORIES.length;
+        let activeCatIndex = 0; 
+        
+        // We use 3 DOM nodes for the infinite loop
+        const domPanels = [
+            document.getElementById('panel-0'),
+            document.getElementById('panel-1'),
+            document.getElementById('panel-2')
+        ];
+        
+        // Roles pointers: indices in domPanels array
+        let pLeft = 2;   
+        let pCenter = 0; 
+        let pRight = 1;  
+
+        // Setup DOM logic
+        function initApp() {
+            lucide.createIcons();
+            
+            // Build Tabs
+            const tabsContainer = document.getElementById('tabs-container');
+            CATEGORIES.forEach((cat, index) => {
+                const btn = document.createElement('button');
+                btn.className = `cat-tab pb-3 px-4 text-sm font-bold whitespace-nowrap transition-colors ${index === 0 ? 'text-brand-600' : 'text-slate-400'}`;
+                btn.innerText = cat;
+                btn.onclick = () => goToCategory(index);
+                tabsContainer.appendChild(btn);
+            });
+            updateTabIndicator(0);
+
+            // Initial Positioning
+            gsap.set(domPanels[pLeft], { xPercent: -100 });
+            gsap.set(domPanels[pCenter], { xPercent: 0 });
+            gsap.set(domPanels[pRight], { xPercent: 100 });
+
+            // Initial Render
+            renderPanelContent(domPanels[pCenter], activeCatIndex);
+            renderPanelContent(domPanels[pRight], (activeCatIndex + 1) % totalCats);
+            renderPanelContent(domPanels[pLeft], (activeCatIndex - 1 + totalCats) % totalCats);
+
+            setupSwipeLogic();
+            setupModals();
+        }
+
+        // --- RENDER LOGIC ---
+        function renderPanelContent(panel, catIndex) {
+            const catName = CATEGORIES[catIndex];
+            const items = MENU_ITEMS.filter(i => i.category === catName);
+            
+            let html = `
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-xl font-black text-slate-900">${catName}</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-3">`;
+            
+            items.forEach(item => {
+                html += `
+                <div class="bg-white rounded-[20px] shadow-sm border border-slate-200 overflow-hidden flex flex-col active:scale-[0.96] transition-transform cursor-pointer" onclick="openItemModal(${item.id})">
+                    <div class="w-full aspect-square bg-slate-200 relative">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="p-3 flex items-center justify-center text-center h-14">
+                        <h3 class="font-bold text-slate-900 text-xs sm:text-sm leading-tight line-clamp-2">${item.name}</h3>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+            panel.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function updateTabIndicator(index) {
+            const tabs = document.querySelectorAll('.cat-tab');
+            tabs.forEach((t, i) => {
+                t.className = `cat-tab pb-3 px-4 text-sm font-bold whitespace-nowrap transition-colors ${i === index ? 'text-brand-600' : 'text-slate-400'}`;
+            });
+            
+            const activeTab = tabs[index];
+            const indicator = document.getElementById('tab-indicator');
+            if(activeTab && indicator) {
+                indicator.style.width = `${activeTab.offsetWidth}px`;
+                indicator.style.left = `${activeTab.offsetLeft}px`;
+                
+                // Scroll container to keep tab visible
+                activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }
+
+        // --- CAROUSEL ANIMATIONS ---
+        let isAnimating = false;
+
+        function goToCategory(targetIndex) {
+            if(targetIndex === activeCatIndex || isAnimating) return;
+            
+            // Determine direction
+            let dir = 1; 
+            if (targetIndex === (activeCatIndex + 1) % totalCats) dir = 1;
+            else if (targetIndex === (activeCatIndex - 1 + totalCats) % totalCats) dir = -1;
+            else dir = targetIndex > activeCatIndex ? 1 : -1;
+
+            if (dir === 1) swipeLeft(targetIndex);
+            else swipeRight(targetIndex);
+        }
+
+        function swipeLeft(forceCatIndex = null) {
+            if(isAnimating) return;
+            isAnimating = true;
+            
+            const nextCatIndex = forceCatIndex !== null ? forceCatIndex : (activeCatIndex + 1) % totalCats;
+            
+            if(forceCatIndex !== null) renderPanelContent(domPanels[pRight], nextCatIndex);
+
+            gsap.to(domPanels[pCenter], { xPercent: -100, duration: 0.4, ease: "power3.inOut" });
+            gsap.to(domPanels[pRight], { xPercent: 0, duration: 0.4, ease: "power3.inOut", onComplete: () => {
+                const oldLeft = pLeft;
+                pLeft = pCenter;
+                pCenter = pRight;
+                pRight = oldLeft;
+
+                activeCatIndex = nextCatIndex;
+                updateTabIndicator(activeCatIndex);
+
+                gsap.set(domPanels[pRight], { xPercent: 100 });
+                renderPanelContent(domPanels[pRight], (activeCatIndex + 1) % totalCats);
+                
+                isAnimating = false;
+            }});
+        }
+
+        function swipeRight(forceCatIndex = null) {
+            if(isAnimating) return;
+            isAnimating = true;
+
+            const prevCatIndex = forceCatIndex !== null ? forceCatIndex : (activeCatIndex - 1 + totalCats) % totalCats;
+            
+            if(forceCatIndex !== null) renderPanelContent(domPanels[pLeft], prevCatIndex);
+
+            gsap.to(domPanels[pCenter], { xPercent: 100, duration: 0.4, ease: "power3.inOut" });
+            gsap.to(domPanels[pLeft], { xPercent: 0, duration: 0.4, ease: "power3.inOut", onComplete: () => {
+                const oldRight = pRight;
+                pRight = pCenter;
+                pCenter = pLeft;
+                pLeft = oldRight;
+
+                activeCatIndex = prevCatIndex;
+                updateTabIndicator(activeCatIndex);
+
+                gsap.set(domPanels[pLeft], { xPercent: -100 });
+                renderPanelContent(domPanels[pLeft], (activeCatIndex - 1 + totalCats) % totalCats);
+                
+                isAnimating = false;
+            }});
+        }
+
+        // --- TOUCH DRAG LOGIC ---
+        function setupSwipeLogic() {
+            const vp = document.getElementById('carousel-viewport');
+            let startX = 0, currentX = 0;
+            let isDragging = false;
+
+            vp.addEventListener('touchstart', (e) => {
+                if(isAnimating || window.modalOpen) return;
+                startX = e.touches[0].clientX;
+                isDragging = true;
+            }, {passive: true});
+
+            vp.addEventListener('touchmove', (e) => {
+                if(!isDragging || window.modalOpen) return;
+                currentX = e.touches[0].clientX;
+                let deltaX = currentX - startX;
+                
+                gsap.set(domPanels[pCenter], { x: deltaX });
+                gsap.set(domPanels[pLeft], { x: deltaX - vp.offsetWidth });
+                gsap.set(domPanels[pRight], { x: deltaX + vp.offsetWidth });
+            }, {passive: true});
+
+            vp.addEventListener('touchend', (e) => {
+                if(!isDragging || window.modalOpen) return;
+                isDragging = false;
+                let deltaX = currentX - startX;
+                const threshold = vp.offsetWidth * 0.2; 
+
+                gsap.set([domPanels[pCenter], domPanels[pLeft], domPanels[pRight]], { clearProps: "x" });
+
+                if (deltaX < -threshold) { swipeLeft(); } 
+                else if (deltaX > threshold) { swipeRight(); } 
+                else {
+                    isAnimating = true;
+                    gsap.to(domPanels[pCenter], { xPercent: 0, duration: 0.3, ease: "power2.out" });
+                    gsap.to(domPanels[pLeft], { xPercent: -100, duration: 0.3, ease: "power2.out" });
+                    gsap.to(domPanels[pRight], { xPercent: 100, duration: 0.3, ease: "power2.out", onComplete: () => isAnimating = false });
+                }
+            });
+        }
+
+        // --- MODALS & CART LOGIC ---
+        window.modalOpen = false;
+        
+        function openItemModal(id) {
+            currentModalItem = MENU_ITEMS.find(i => i.id === id);
+            currentModalQty = 1;
+            currentModalExtraCost = 0;
+
+            // Reset scroll position to the top
+            document.getElementById('item-modal-body').scrollTop = 0;
+
+            document.getElementById('item-modal-title').innerText = currentModalItem.name;
+            document.getElementById('item-modal-desc').innerText = currentModalItem.description;
+            document.getElementById('item-modal-price').innerText = `$${currentModalItem.price}`;
+            document.getElementById('item-modal-img').style.backgroundImage = `url('${currentModalItem.image}')`;
+            document.getElementById('item-modal-notes').value = '';
+
+            const optionsContainer = document.getElementById('item-modal-options');
+            if (currentModalItem.requiresMilk) {
+                optionsContainer.classList.replace('hidden', 'flex');
+                // Reset radios
+                const radios = document.querySelectorAll('input[name="milk"]');
+                radios[0].checked = true;
+                updateModalTotal();
+            } else {
+                optionsContainer.classList.replace('flex', 'hidden');
+                updateModalTotal();
+            }
+
+            window.modalOpen = true;
+            document.getElementById('modal-overlay').classList.replace('opacity-0', 'opacity-100');
+            document.getElementById('modal-overlay').classList.replace('pointer-events-none', 'pointer-events-auto');
+            gsap.to('#item-modal', { y: '0%', duration: 0.4, ease: 'power3.out' });
+        }
+
+        function closeItemModal() {
+            gsap.to('#item-modal', { y: '100%', duration: 0.3, ease: 'power3.in' });
+            document.getElementById('modal-overlay').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('modal-overlay').classList.replace('pointer-events-auto', 'pointer-events-none');
+            setTimeout(() => { window.modalOpen = false; }, 300);
+        }
+
+        function updateModalTotal() {
+            const base = currentModalItem.price;
+            document.getElementById('modal-qty').innerText = currentModalQty;
+            const total = (base + currentModalExtraCost) * currentModalQty;
+            document.getElementById('modal-add-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function setupModals() {
+            // Overlay click to close
+            document.getElementById('modal-overlay').addEventListener('click', () => {
+                if(document.getElementById('checkout-modal').style.transform === 'translate(0px, 0%)' || document.getElementById('checkout-modal').style.transform === 'translate(0%, 0%)') {
+                    closeCheckoutModal();
+                } else {
+                    closeItemModal();
+                }
+            });
+
+            // Qty Buttons
+            document.getElementById('btn-modal-minus').addEventListener('click', () => {
+                if (currentModalQty > 1) { currentModalQty--; updateModalTotal(); }
+            });
+            document.getElementById('btn-modal-plus').addEventListener('click', () => {
+                currentModalQty++; updateModalTotal();
+            });
+
+            // Radio change for extras
+            document.querySelectorAll('input[name="milk"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    currentModalExtraCost = parseInt(e.target.getAttribute('data-extra') || '0');
+                    updateModalTotal();
+                });
+            });
+
+            // Add to cart
+            document.getElementById('btn-modal-add').addEventListener('click', () => {
+                const notes = document.getElementById('item-modal-notes').value.trim();
+                let milk = null;
+                
+                if (currentModalItem.requiresMilk) {
+                    const checkedMilk = document.querySelector('input[name="milk"]:checked');
+                    if (checkedMilk) {
+                        milk = checkedMilk.value;
+                    }
+                }
+                
+                const cartItem = {
+                    ...currentModalItem,
+                    cartId: Date.now() + Math.random().toString(36).substr(2, 9),
+                    quantity: currentModalQty,
+                    finalPrice: currentModalItem.price + currentModalExtraCost,
+                    milk: milk,
+                    notes: notes
+                };
+                
+                cart.push(cartItem);
+                updateFAB();
+                closeItemModal();
+            });
+
+            // FAB Click
+            document.getElementById('btn-open-checkout').addEventListener('click', openCheckoutModal);
+            
+            // Close Checkout
+            document.getElementById('btn-close-checkout').addEventListener('click', closeCheckoutModal);
+
+            // Delivery Toggles
+            document.getElementById('btn-pickup').addEventListener('click', () => setDelivery('pickup'));
+            document.getElementById('btn-delivery').addEventListener('click', () => setDelivery('delivery'));
+
+            // Send Order
+            document.getElementById('btn-send-order').addEventListener('click', processCheckout);
+        }
+
+        // --- CHECKOUT & CART MANIPULATION ---
+        function updateFAB() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalAmount = cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
+            
+            const fab = document.getElementById('fab-container');
+            if (totalItems > 0) {
+                document.getElementById('fab-badge').innerText = totalItems;
+                document.getElementById('fab-total').innerText = `$${totalAmount.toFixed(2)}`;
+                gsap.to(fab, { y: '0%', duration: 0.5, ease: 'back.out(1.5)' });
+            } else {
+                gsap.to(fab, { y: '150%', duration: 0.4, ease: 'power2.in' });
+            }
+        }
+
+        function openCheckoutModal() {
+            renderCheckoutItems();
+            window.modalOpen = true;
+            document.getElementById('modal-overlay').classList.replace('opacity-0', 'opacity-100');
+            document.getElementById('modal-overlay').classList.replace('pointer-events-none', 'pointer-events-auto');
+            gsap.to('#checkout-modal', { y: '0%', duration: 0.4, ease: 'power3.out' });
+        }
+
+        function closeCheckoutModal() {
+            gsap.to('#checkout-modal', { y: '100%', duration: 0.3, ease: 'power3.in' });
+            document.getElementById('modal-overlay').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('modal-overlay').classList.replace('pointer-events-auto', 'pointer-events-none');
+            setTimeout(() => { window.modalOpen = false; }, 300);
+        }
+
+        function setDelivery(method) {
+            deliveryMethod = method;
+            if(method === 'pickup') {
+                document.getElementById('btn-pickup').className = "flex-1 py-3 px-2 border rounded-[4px] text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-colors bg-brand-600 text-white border-brand-600";
+                document.getElementById('btn-delivery').className = "flex-1 py-3 px-2 border rounded-[4px] text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-colors bg-white text-slate-500 border-slate-200 active:bg-slate-50";
+                document.getElementById('checkout-delivery-row').classList.replace('flex', 'hidden');
+            } else {
+                document.getElementById('btn-delivery').className = "flex-1 py-3 px-2 border rounded-[4px] text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-colors bg-brand-600 text-white border-brand-600";
+                document.getElementById('btn-pickup').className = "flex-1 py-3 px-2 border rounded-[4px] text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-colors bg-white text-slate-500 border-slate-200 active:bg-slate-50";
+                document.getElementById('checkout-delivery-row').classList.replace('hidden', 'flex');
+            }
+            renderCheckoutItems(); 
+        }
+
+        window.updateCheckoutQty = (cartId, delta) => {
+            const index = cart.findIndex(i => i.cartId === cartId);
+            if(index > -1) {
+                cart[index].quantity += delta;
+                if(cart[index].quantity <= 0) {
+                    cart.splice(index, 1);
+                }
+                updateFAB();
+                
+                if(cart.length === 0) {
+                    closeCheckoutModal();
+                } else {
+                    renderCheckoutItems();
+                }
+            }
+        };
+
+        window.removeCheckoutItem = (cartId) => {
+            cart = cart.filter(i => i.cartId !== cartId);
+            updateFAB();
+            if(cart.length === 0) closeCheckoutModal();
+            else renderCheckoutItems();
+        };
+
+        function renderCheckoutItems() {
+            const container = document.getElementById('checkout-items');
+            container.innerHTML = '';
+            
+            let subtotal = 0;
+            
+            cart.forEach(item => {
+                subtotal += item.finalPrice * item.quantity;
+                let details = '';
+                if(item.milk) details += `<span class="text-xs text-slate-500 block">Leche: ${item.milk}</span>`;
+                if(item.notes) details += `<span class="text-xs text-slate-500 block italic">"${item.notes}"</span>`;
+
+                container.innerHTML += `
+                <div class="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0 last:pb-0">
+                    <img src="${item.image}" class="w-16 h-16 rounded-[4px] object-cover shrink-0" />
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="font-bold text-slate-900 text-sm leading-tight">${item.name}</h4>
+                            <span class="font-bold text-slate-900 ml-2">$${item.finalPrice}</span>
+                        </div>
+                        ${details}
+                        <div class="flex items-center justify-between mt-3">
+                            <div class="flex items-center border border-slate-200 rounded-[4px] bg-slate-50 h-8">
+                                <button onclick="updateCheckoutQty('${item.cartId}', -1)" class="w-8 h-full flex items-center justify-center hover:bg-slate-200 text-slate-600 rounded-l-[4px]">
+                                    <i data-lucide="minus" class="w-3 h-3"></i>
+                                </button>
+                                <span class="w-6 text-center text-xs font-bold text-slate-900">${item.quantity}</span>
+                                <button onclick="updateCheckoutQty('${item.cartId}', 1)" class="w-8 h-full flex items-center justify-center hover:bg-slate-200 text-slate-600 rounded-r-[4px]">
+                                    <i data-lucide="plus" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <button onclick="removeCheckoutItem('${item.cartId}')" class="p-1.5 text-slate-400 active:text-red-500 rounded-[4px]">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            lucide.createIcons();
+
+            const fee = deliveryMethod === 'delivery' ? DELIVERY_FEE : 0;
+            const total = subtotal + fee;
+
+            document.getElementById('checkout-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('checkout-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function processCheckout() {
+            if (cart.length === 0) return;
+
+            let subtotal = 0;
+            let message = `¡Hola Habitante Café! \nMe gustaría realizar el siguiente pedido:\n\n`;
+            
+            cart.forEach(item => {
+                const rowTotal = item.finalPrice * item.quantity;
+                subtotal += rowTotal;
+                message += ` ${item.quantity}x ${item.name} ($${item.finalPrice}) = $${rowTotal}\n`;
+                if(item.milk) message += `   - Leche: ${item.milk}\n`;
+                if(item.notes) message += `   - Notas: ${item.notes}\n`;
+            });
+            
+            const fee = deliveryMethod === 'delivery' ? DELIVERY_FEE : 0;
+            const total = subtotal + fee;
+
+            message += `\n Método: ${deliveryMethod === 'pickup' ? 'Recoger en tienda' : 'Servicio a domicilio'}`;
+            if (deliveryMethod === 'delivery') {
+                message += `\n🛵 Costo de envío: $${fee}`;
+            }
+            
+            message += `\n\n *Total a pagar: $${total}*`;
+            message += `\n\n¡Gracias!`;
+
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${WA_PHONE}?text=${encodedMessage}`, '_blank');
+        }
+
+        // Boot
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
